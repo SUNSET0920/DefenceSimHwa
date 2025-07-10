@@ -1,6 +1,8 @@
 #include <windows.h>
 #include "maprender.h"
 
+// 깃 테스브 으ㅏㅇ늬ㅏ므위ㅏㅁ눙
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
 {
     // 렌더러 초기화 → 윈도우 생성, GDI+ 초기화까지 여기서

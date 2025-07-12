@@ -1,16 +1,15 @@
 // MapRender.cpp
 #include "maprender.h"
-#include "mapInfo.h"    // 파일명에 맞춰 경로 조정
 #include "resource.h"
-
+#include "GameManager.h"
 
 #include "mainheader.h"
 
-using namespace Gdiplus;
+static GameManager gameManager(Width, Height, dstW, dstH);
 
 static HINSTANCE  g_hInst = nullptr;
 
-static MapInfo             g_map; // 출력할때 이동구간인지, 영웅 설치 구간인지 정보 받아오기 위함
+//static MapInfo             g_map; // 출력할때 이동구간인지, 영웅 설치 구간인지 정보 받아오기 위함
 
 ULONG_PTR gdiplusToken;
 
@@ -34,15 +33,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     HDC hdc, MemDC;
     PAINTSTRUCT ps;
     HBITMAP MyBitmap, OldBitmap;
+
+    MapInfo g_map;
+    g_map.setMap();
+    g_map.setMFH();
     switch (message)
     {
     case WM_CREATE:
     {
         GdiplusStartupInput gdiplusStartupInput;
         GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
-        
-        // 맵 세팅
-        g_map.setMap();
         
         // 이미지 로드
         {
@@ -60,55 +60,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_Flowerimg = new Image(L"Asserts/Images/Tile/Flower.png");
         }
         InvalidateRect(hWnd, nullptr, TRUE);
+        gameManager.init(hWnd, g_hInst);
     }
     break;
+    case WM_COMMAND:
+        gameManager.cmd(hWnd, LOWORD(wParam));
+        return 0;
+    case WM_LBUTTONDOWN:
+        gameManager.mouseDown(LOWORD(lParam), HIWORD(lParam));
+        return 0;
+    case WM_MOUSEMOVE:
+        gameManager.mouseMove(LOWORD(lParam), HIWORD(lParam));
+        return 0;
+    case WM_LBUTTONUP:
+        gameManager.mouseUp(LOWORD(lParam), HIWORD(lParam));
+        return 0;
+
+    case WM_TIMER:
+        // dt = 16ms
+        gameManager.timer(wParam, 0.016f);
+        return 0;
 
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        Graphics graphics(hdc);
 
-        // 바탕 하얀색으로 초기화
-        graphics.Clear(Color::White);
+        // 1) 메모리 DC, 비트맵 생성
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        HDC memDC = CreateCompatibleDC(hdc);
+        HBITMAP backBmp = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+        HBITMAP oldBmp = (HBITMAP)SelectObject(memDC, backBmp);
 
-        graphics.SetSmoothingMode(SmoothingModeHighQuality);
-        // 픽셀 단위 확대 / 축소 시 보간을 하지 않아 경계가 또렷
-        graphics.SetInterpolationMode(InterpolationModeNearestNeighbor);
-        // 좌표 반 픽셀 단위 절삭을 보정
-        graphics.SetPixelOffsetMode(PixelOffsetModeHalf);
-        graphics.SetCompositingQuality(CompositingQualityHighSpeed);
-        
-        for (int i = 0; i < Height; ++i) {
-            for (int j = 0; j < Width; ++j) {
-                Image* selimg = nullptr;
-                if (g_map.grid[i][j] == TileType::Build) {
-                    if (i == 1 && j == 1)                        selimg = g_LUimg;
-                    else if (i == 1 && j == Width - 2)           selimg = g_RUimg;
-                    else if (i == Height - 2 && j == 1)          selimg = g_LDimg;
-                    else if (i == Height - 2 && j == Width - 2)  selimg = g_RDimg;
-                    else if (j == 1)                             selimg = g_Limg;
-                    else if (j == Width-2)                       selimg = g_Rimg;
-                    else if (i == 1)                             selimg = g_Uimg;
-                    else if (i == Height - 2)                    selimg = g_Dimg;
-                    else                                         selimg = g_Mimg;
-                }
-                else {
-                    bool checker = ((i + j) % 2) == 0;
-                    selimg = checker ? g_Grassimg : g_Flowerimg;
-                }
-                if (selimg)
-                {
-                    const int dstW = 50;
-                    const int dstH = 50;
+        // 2) 메모리 DC에서 GDI+ 그리기
+        Graphics gMem(memDC);
+        RenderMap(gMem, g_map);
+        gameManager.render(gMem);
 
-                    int x = 100;
-                    int y = 100;
-                    graphics.DrawImage(selimg, x + (dstW * j), y + (dstH * i), dstW, dstH);
-                }
-            }
-        }
-        graphics.ResetTransform();
+        // 3) 메모리 DC → 실제 화면 복사
+        BitBlt(hdc, 0, 0, rc.right, rc.bottom, memDC, 0, 0, SRCCOPY);
+
+        // 4) 리소스 정리
+        SelectObject(memDC, oldBmp);
+        DeleteObject(backBmp);
+        DeleteDC(memDC);
         EndPaint(hWnd, &ps);
     }
     break;
@@ -172,3 +168,42 @@ int RunRenderer() {
 
 // (리소스 정리는 WM_DESTROY에서 처리하므로 비어 있어도 무방)
 void CleanupRenderer() {}
+
+void RenderMap(Graphics& g,MapInfo g_map) {
+    
+    // 바탕 하얀색으로 초기화
+    g.Clear(Color::White);
+
+    g.SetSmoothingMode(SmoothingModeHighQuality);
+    // 픽셀 단위 확대 / 축소 시 보간을 하지 않아 경계가 또렷
+    g.SetInterpolationMode(InterpolationModeNearestNeighbor);
+    // 좌표 반 픽셀 단위 절삭을 보정
+    g.SetPixelOffsetMode(PixelOffsetModeHalf);
+    g.SetCompositingQuality(CompositingQualityHighSpeed);
+
+    for (int i = 0; i < Height; ++i) {
+        for (int j = 0; j < Width; ++j) {
+            Image* selimg = nullptr;
+            if (g_map.grid[i][j] == TileType::Build) {
+                if (i == 1 && j == 1)                        selimg = g_LUimg;
+                else if (i == 1 && j == Width - 2)           selimg = g_RUimg;
+                else if (i == Height - 2 && j == 1)          selimg = g_LDimg;
+                else if (i == Height - 2 && j == Width - 2)  selimg = g_RDimg;
+                else if (j == 1)                             selimg = g_Limg;
+                else if (j == Width - 2)                       selimg = g_Rimg;
+                else if (i == 1)                             selimg = g_Uimg;
+                else if (i == Height - 2)                    selimg = g_Dimg;
+                else                                         selimg = g_Mimg;
+            }
+            else {
+                bool checker = ((i + j) % 2) == 0;
+                selimg = checker ? g_Grassimg : g_Flowerimg;
+            }
+            if (selimg)
+            {
+                g.DrawImage(selimg, OFFSET_X + j * dstW, OFFSET_Y + i * dstH, dstW, dstH);
+            }
+        }
+    }
+    g.ResetTransform();
+}

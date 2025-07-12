@@ -1,5 +1,5 @@
 #include "Entity.h"
-
+#include "mapInfo.h"
 using namespace std;
 
 enum class HeroType {Warrior, Archer, Mage};

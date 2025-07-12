@@ -15,7 +15,7 @@ public:
 	shared_ptr<Path> path;
 	Rank rank;
 
-	Monster(shared_ptr<Path> pt);
+	Monster(shared_ptr<Path> pt, Rank r);
 	void update(float deltaTime) override;
 	void render(Graphics& g)override;
 };

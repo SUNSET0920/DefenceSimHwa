@@ -4,19 +4,25 @@
 
 using namespace Gdiplus;
 
+static constexpr float RANK_MULTIPLIER[] = { 1.0f, 1.5f, 2.0f };
+
 // 맵 렌더링에서 사용하는 타일 크기 및 오프셋
 static const int dstW = 50;
 static const int dstH = 50;
 static const int offsetX = 100;
 static const int offsetY = 100;
 
-Monster::Monster(shared_ptr<Path> pt): speed(80.0f), hp(100.0f), pathIndex(0), path(pt)
+Monster::Monster(shared_ptr<Path> pt, Rank r): speed(80.0f), hp(100.0f), pathIndex(0), path(pt), rank(r)
 {
     if (path && !path->waypoints.empty()) {
         Vec2 start = path->waypoints[0];
         pos.x = offsetX + start.x * dstW + dstW / 2;
         pos.y = offsetY + start.y * dstH + dstH / 2;
     }
+
+    float coef = RANK_MULTIPLIER[static_cast<int>(rank)];
+    hp *= coef;
+    speed /= coef;
 }
 
 void Monster::update(float deltaTime) {

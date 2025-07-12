@@ -1,7 +1,6 @@
 #include <windows.h>
 #include "maprender.h"
 
-// ±ê Å×½ººê À¸¤¿¤·´Ì¤¿¹ÇÀ§¤¿¤±´±
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
 {

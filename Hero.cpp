@@ -1,12 +1,22 @@
 #include "Hero.h"
 #include "Monster.h"
 
+MapInfo map;
+
 static constexpr float TILE_SIZE = 50.f;
 static constexpr float RANK_MULTIPLIER[] = { 1.0f, 1.5f, 2.0f };
 
 Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r) {
-	pos = { p.x * (int)TILE_SIZE + (int)TILE_SIZE / 2, p.y * (int)TILE_SIZE + (int)TILE_SIZE / 2 };
-	
+    for (int i = 0; i < Height - 1; ++i) {
+        for (int j = 0; j < Width - 1; ++j) {
+            if (map.MFH[i][j].inHero == false) {
+                pos = map.MFH[i][j].pos;
+                map.MFH[i][j].inHero = true;
+                break;
+            }
+        }
+    }
+
 	switch (type) {
 	case HeroType::Warrior:
 		attackSpeed = 0.5f; // 0.5초에 한 번
@@ -40,7 +50,7 @@ void Hero::update(float dt) {
 
     // 사거리 내 몬스터 탐색 및 공격
     // (GameManager에서 monsters 벡터를 넘겨 받거나, 참조 획득)
-    findAndAttack(/*monsters from GM*/);
+    //findAndAttack(/*monsters from GM*/);
 }
 
 void Hero::findAndAttack(const vector<shared_ptr<Monster>>& monsters) {

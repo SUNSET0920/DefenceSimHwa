@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="GameManager.h" />
     <ClInclude Include="Hero.h" />
     <ClInclude Include="mainheader.h" />
     <ClInclude Include="mapInfo.h" />

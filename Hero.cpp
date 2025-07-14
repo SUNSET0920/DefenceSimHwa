@@ -1,17 +1,17 @@
 #include "Hero.h"
 #include "Monster.h"
 
-MapInfo map;
-
 static constexpr float TILE_SIZE = 50.f;
 static constexpr float RANK_MULTIPLIER[] = { 1.0f, 1.5f, 2.0f };
 
 Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r) {
     for (int i = 0; i < Height - 1; ++i) {
         for (int j = 0; j < Width - 1; ++j) {
-            if (map.MFH[i][j].inHero == false) {
-                pos = map.MFH[i][j].pos;
-                map.MFH[i][j].inHero = true;
+            if (map.mapinfo[i][j].inHero == false) {
+                pos.x = map.mapinfo[i][j].pos.x;
+                pos.y = map.mapinfo[i][j].pos.y;
+                //pos = map.mapinfo[i][j].pos;
+                map.mapinfo[i][j].inHero = true;
                 break;
             }
         }

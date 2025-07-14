@@ -6,7 +6,7 @@
 
 
 using namespace Gdiplus;
-
+//MapInfo g_map;
 // 호출 성공 시 true 반환
 bool InitRenderer(HINSTANCE hInst, int nCmdShow);
 // 윈도우 메시지 루프 실행, 리턴값은 메시지 펌프의 wParam

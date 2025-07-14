@@ -13,6 +13,8 @@ static HINSTANCE  g_hInst = nullptr;
 
 ULONG_PTR gdiplusToken;
 
+MapInfo g_map;
+
 // 영웅 설치구간 L - 왼쪽 R - 오른쪽 U - 위 D - 아래
 Image* g_LUimg = nullptr;
 Image* g_Limg = nullptr;
@@ -34,9 +36,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HBITMAP MyBitmap, OldBitmap;
 
-    MapInfo g_map;
     g_map.setMap();
-    g_map.setMFH();
     switch (message)
     {
     case WM_CREATE:
@@ -184,7 +184,7 @@ void RenderMap(Graphics& g,MapInfo g_map) {
     for (int i = 0; i < Height; ++i) {
         for (int j = 0; j < Width; ++j) {
             Image* selimg = nullptr;
-            if (g_map.grid[i][j] == TileType::Build) {
+            if (g_map.mapinfo[i][j].type == TileType::Build) {
                 if (i == 1 && j == 1)                        selimg = g_LUimg;
                 else if (i == 1 && j == Width - 2)           selimg = g_RUimg;
                 else if (i == Height - 2 && j == 1)          selimg = g_LDimg;
@@ -201,7 +201,8 @@ void RenderMap(Graphics& g,MapInfo g_map) {
             }
             if (selimg)
             {
-                g.DrawImage(selimg, OFFSET_X + j * dstW, OFFSET_Y + i * dstH, dstW, dstH);
+                //g.DrawImage(selimg, OFFSET_X + j * dstW, OFFSET_Y + i * dstH, dstW, dstH);
+                g.DrawImage(selimg, g_map.mapinfo[j][i].pos.x, g_map.mapinfo[j][i].pos.y, dstW, dstH);
             }
         }
     }

@@ -1,3 +1,4 @@
+#pragma once
 #include "Entity.h"
 #include "mapInfo.h"
 using namespace std;
@@ -17,6 +18,7 @@ public:
 
 	HeroType type;
 	Rank rank;
+	MapInfo map;
 
 	float attackCooldown; // 남은 재장전 시간
 	float attackSpeed; // 초당 공격 횟수

@@ -45,9 +45,9 @@ public:
             // 첫번째 build 타일 위치 찾아서 소환
             for (int i = 0; i < mapHeight; ++i)
                 for (int j = 0; j < mapWidth; ++j)
-                    if (map.grid[i][j] == TileType::Build) {
+                    if (map.mapinfo[i][j].type == TileType::Build) {
                         heroes.push_back(
-                            std::make_shared<Hero>(HeroType::Warrior, Rank::Bronze, Vec2{ j,i })
+                            make_shared<Hero>(HeroType::Warrior, Rank::Bronze, Vec2{ j,i })
                         );
                         return;
                     }

@@ -1,20 +1,26 @@
 #include "Hero.h"
 #include "Monster.h"
+#include "MapRender.h"
 
 static constexpr float TILE_SIZE = 50.f;
 static constexpr float RANK_MULTIPLIER[] = { 1.0f, 1.5f, 2.0f };
 
-Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r) {
-    for (int i = 0; i < Height - 1; ++i) {
-        for (int j = 0; j < Width - 1; ++j) {
-            if (map.mapinfo[i][j].inHero == false) {
-                pos.x = map.mapinfo[i][j].pos.x;
-                pos.y = map.mapinfo[i][j].pos.y;
-                //pos = map.mapinfo[i][j].pos;
-                map.mapinfo[i][j].inHero = true;
+Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r), gridPos(p) {
+
+    bool ishero = false;
+    for (int i = 1; i < Height-1; ++i) {
+        for (int j = 1; j < Width-1; ++j) {
+            auto& cell = g_map.mapinfo[i][j];
+            if (cell.inHero == false) {
+                pos.x = cell.pos.x;
+                pos.y = cell.pos.y;
+                cell.inHero = true;
+                ishero = true;
                 break;
             }
         }
+        if (ishero)
+            break;
     }
 
 	switch (type) {
@@ -57,7 +63,7 @@ void Hero::findAndAttack(const vector<shared_ptr<Monster>>& monsters) {
     if (attackCooldown > 0.0f) return;
 
     // 가장 가까운 몬스터 찾기
-    std::shared_ptr<Monster> target = nullptr;
+    shared_ptr<Monster> target = nullptr;
     float bestDist2 = detectRange * detectRange;
 
     for (auto& m : monsters) {
@@ -77,7 +83,22 @@ void Hero::findAndAttack(const vector<shared_ptr<Monster>>& monsters) {
     }
 }
 
+PointF Hero::pixelPos() const {
+    return {
+        float(OFFSET_X + gridPos.x * dstW + dstW / 2), float(OFFSET_Y + gridPos.y * dstH + dstH / 2)
+    };
+}
+
 void Hero::render(Gdiplus::Graphics& g) {
-    // pos를 중심으로 영웅 이미지 그리기
-    // 예: g.DrawImage(warriorImg, pos.x - TILE_SIZE/2, pos.y - TILE_SIZE/2);
+    // 이미지를 중앙 기준으로 그릴 경우:  
+    auto p = pixelPos();
+    int halfW = dstW / 2, halfH = dstH / 2;
+    // e.g. g.DrawImage(heroBitmap, p.X-halfW, p.Y-halfH, dstW, dstH);  
+    // 테스트용: 파란 원으로 대체  
+    SolidBrush blueBrush(Color(255, 0, 0, 255));
+    g.FillEllipse(&blueBrush,
+        int(p.X) - halfW,
+        int(p.Y) - halfH,
+        dstW, dstH
+    );
 }

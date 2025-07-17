@@ -2,11 +2,11 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include <windows.h>
-#include <gdiplus.h>
+#include "mainheader.h"
+#include <algorithm>
 #include "Hero.h"
 #include "Monster.h"
-#include "mapInfo.h"
+#include "MapRender.h"
 
 static const UINT ID_TIMER_SPAWN = 1;
 static const UINT ID_TIMER_UPDATE = 2;
@@ -14,13 +14,13 @@ static const UINT ID_BTN_SUMMON = 1001;
 
 class GameManager {
 public:
-    GameManager(int mapW, int mapH, int tileW, int tileH)
+    GameManager(int mapW, int mapH, int entityW, int entityH)
         : mapWidth(mapW), mapHeight(mapH),
-        dstW(tileW), dstH(tileH),
+        enW(entityW), enH(entityH),
         dragIndex(-1), dragging(false)
     {
         // 경로 생성: 맵 테두리 따라 시계방향
-        path = std::make_shared<Path>();
+        path = make_shared<Path>();
         for (int j = 0; j < mapW; ++j)     path->waypoints.push_back({ j, 0 });
         for (int i = 1; i < mapH; ++i)     path->waypoints.push_back({ mapW - 1, i });
         for (int j = mapW - 2; j >= 0; --j)   path->waypoints.push_back({ j, mapH - 1 });
@@ -43,14 +43,17 @@ public:
     void cmd(HWND, int id) {
         if (id == ID_BTN_SUMMON) {
             // 첫번째 build 타일 위치 찾아서 소환
-            for (int i = 0; i < mapHeight; ++i)
-                for (int j = 0; j < mapWidth; ++j)
-                    if (map.mapinfo[i][j].type == TileType::Build) {
+            
+            for (int i = 0; i < mapHeight; ++i) {
+                for (int j = 0; j < mapWidth; ++j) {
+                    if (g_map.mapinfo[i][j].type == TileType::Build && g_map.mapinfo[i][j].inHero == false) {
                         heroes.push_back(
                             make_shared<Hero>(HeroType::Warrior, Rank::Bronze, Vec2{ j,i })
                         );
                         return;
                     }
+                }
+            }
         }
     }
 
@@ -58,8 +61,16 @@ public:
         // 클릭한 지점에 영웅이 있나?
         for (int k = 0; k < (int)heroes.size(); ++k) {
             auto& h = heroes[k];
-            float dx = mx - h->pos.x, dy = my - h->pos.y;
-            if (dx * dx + dy * dy <= (dstW / 2) * (dstW / 2)) {
+            // 픽셀 중심 좌표
+            auto p = h->pixelPos();
+            float dx = mx - p.X;
+            float dy = my - p.Y;
+            float r = dstW / 2.0f;   // 반지름 = 타일 절반
+
+            // 원 안에 있으면 드래깅 시작
+            if (dx * dx + dy * dy <= r * r) {
+                Vec2 oldGrid = h->gridPos;
+                g_map.mapinfo[oldGrid.y][oldGrid.x].inHero = false;
                 dragging = true;
                 dragIndex = k;
                 return;
@@ -67,16 +78,41 @@ public:
         }
     }
     void mouseMove(int mx, int my) {
-        if (dragging && dragIndex >= 0) {
-            heroes[dragIndex]->pos.x = mx;
-            heroes[dragIndex]->pos.y = my;
+        if (!dragging || dragIndex < 0) return;
+        
+        dragMouseX = mx;
+        dragMouseY = my;
+        // 마우스 픽셀 -> 그리드 인덱스
+        int tileX = (mx - OFFSET_X) / dstW;
+        int tileY = (my - OFFSET_Y) / dstH;
+
+        // 범위 벗어나지 않도록 클램프
+        tileX = clamp(tileX, 0, mapWidth - 1);
+        tileY = clamp(tileY, 0, mapHeight - 1);
+
+        // 해당 타일이 설치 가능(Build)하면 gridPos 업데이트
+        if (g_map.mapinfo[tileY][tileX].type == TileType::Build) {
+            heroes[dragIndex]->gridPos = { tileX, tileY };
+            auto p = heroes[dragIndex]->pixelPos();
+            dragMouseX = int(p.X);
+            dragMouseY = int(p.Y);
         }
     }
-    void mouseUp(int, int) {
-        if (dragging) {
-            dragging = false;
-            dragIndex = -1;
-        }
+    void mouseUp(int mx, int my) {
+        if (!dragging || dragIndex < 0) return;
+
+        int tileX = (mx - OFFSET_X) / dstW;
+        int tileY = (my - OFFSET_Y) / dstH;
+
+        // 범위 벗어나지 않도록 클램프
+        tileX = clamp(tileX, 0, mapWidth - 1);
+        tileY = clamp(tileY, 0, mapHeight - 1);
+
+        g_map.mapinfo[tileY][tileX].inHero = true;
+
+        dragging = false;
+        dragIndex = -1;
+
     }
 
     void timer(UINT_PTR id, float dt) {
@@ -98,23 +134,35 @@ public:
         }
     }
 
-    void render(Gdiplus::Graphics& g) {
+    void render(Graphics& g) {
         // 영웅: 파란 타원
-        Gdiplus::SolidBrush blueBrush(Gdiplus::Color(255, 0, 0, 255));
-        for (auto& h : heroes) {
-            g.FillEllipse(&blueBrush,
-                h->pos.x - dstW / 2,
-                h->pos.y - dstH / 2,
-                dstW, dstH
-            );
+        SolidBrush blueBrush(Color(255, 0, 0, 255));
+        for (int k = 0; k < (int)heroes.size(); ++k) {
+            if (dragging && k == dragIndex) {
+                // 드래그 중: 마우스 픽셀 좌표(dragMouseX/Y) 기준으로 중앙 그리기
+                g.FillEllipse(&blueBrush,
+                    dragMouseX - enW / 2,
+                    dragMouseY - enH / 2,
+                    enW, enH
+                );
+            }
+            else {
+                // 평상시: gridPos → pixelPos() 이용해 중앙 그리기
+                auto p = heroes[k]->pixelPos();
+                g.FillEllipse(&blueBrush,
+                    int(p.X) - enW / 2,
+                    int(p.Y) - enH / 2,
+                    enW, enH
+                );
+            }
         }
         // 몬스터: 빨간 타원
-        Gdiplus::SolidBrush redBrush(Gdiplus::Color(255, 255, 0, 0));
+        SolidBrush redBrush(Color(255, 255, 0, 0));
         for (auto& m : monsters) {
             g.FillEllipse(&redBrush,
-                m->pos.x - dstW / 2,
-                m->pos.y - dstH / 2,
-                dstW, dstH
+                m->pos.x - enW / 2,
+                m->pos.y - enH / 2,
+                enW, enH
             );
         }
     }
@@ -122,11 +170,11 @@ public:
 private:
     HWND hWnd;
     int  mapWidth, mapHeight;
-    int  dstW, dstH;
-    std::shared_ptr<Path> path;
-    std::vector<std::shared_ptr<Hero>>    heroes;
-    std::vector<std::shared_ptr<Monster>> monsters;
+    int  enW, enH;
+    shared_ptr<Path> path;
+    vector<shared_ptr<Hero>>    heroes;
+    vector<shared_ptr<Monster>> monsters;
     bool dragging;
     int  dragIndex;
-    MapInfo map;
+    int dragMouseX, dragMouseY;
 };

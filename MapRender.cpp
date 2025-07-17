@@ -5,7 +5,7 @@
 
 #include "mainheader.h"
 
-static GameManager gameManager(Width, Height, dstW, dstH);
+static GameManager gameManager(Width, Height, 40, 40);
 
 static HINSTANCE  g_hInst = nullptr;
 
@@ -36,7 +36,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HBITMAP MyBitmap, OldBitmap;
 
-    g_map.setMap();
+    
     switch (message)
     {
     case WM_CREATE:
@@ -61,6 +61,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         InvalidateRect(hWnd, nullptr, TRUE);
         gameManager.init(hWnd, g_hInst);
+
+        g_map.setMap();
     }
     break;
     case WM_COMMAND:
@@ -190,7 +192,7 @@ void RenderMap(Graphics& g,MapInfo g_map) {
                 else if (i == Height - 2 && j == 1)          selimg = g_LDimg;
                 else if (i == Height - 2 && j == Width - 2)  selimg = g_RDimg;
                 else if (j == 1)                             selimg = g_Limg;
-                else if (j == Width - 2)                       selimg = g_Rimg;
+                else if (j == Width - 2)                     selimg = g_Rimg;
                 else if (i == 1)                             selimg = g_Uimg;
                 else if (i == Height - 2)                    selimg = g_Dimg;
                 else                                         selimg = g_Mimg;
@@ -202,7 +204,7 @@ void RenderMap(Graphics& g,MapInfo g_map) {
             if (selimg)
             {
                 //g.DrawImage(selimg, OFFSET_X + j * dstW, OFFSET_Y + i * dstH, dstW, dstH);
-                g.DrawImage(selimg, g_map.mapinfo[j][i].pos.x, g_map.mapinfo[j][i].pos.y, dstW, dstH);
+                g.DrawImage(selimg, g_map.mapinfo[i][j].pos.x, g_map.mapinfo[i][j].pos.y, dstW, dstH);
             }
         }
     }

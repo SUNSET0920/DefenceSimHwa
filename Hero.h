@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.h"
 #include "mapInfo.h"
+#include "mainheader.h"
 using namespace std;
 
 enum class HeroType {Warrior, Archer, Mage};
@@ -15,10 +16,11 @@ public:
 	
 	void update(float dt) override;
 	void render(Graphics& g) override;
+	PointF pixelPos() const;
+	Vec2 gridPos;  // 이걸로 렌더링 위치를 계산
 
 	HeroType type;
 	Rank rank;
-	MapInfo map;
 
 	float attackCooldown; // 남은 재장전 시간
 	float attackSpeed; // 초당 공격 횟수

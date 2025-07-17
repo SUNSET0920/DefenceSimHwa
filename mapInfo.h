@@ -11,7 +11,7 @@ static const int Width = 11;
 static const int Height = 7;
 
 constexpr int OFFSET_X = 100;
-constexpr int OFFSET_Y = 300;
+constexpr int OFFSET_Y = 200;
 constexpr int dstW = 50;
 constexpr int dstH = 50;
 
@@ -45,8 +45,8 @@ public:
                     mapinfo[i][j].type = TileType::Build;
                 }
                 mapinfo[i][j].inHero = false;
-                mapinfo[i][j].pos.x = OFFSET_X + dstH * (j + 1);
-                mapinfo[i][j].pos.y = OFFSET_Y + dstW * (i + 1);
+                mapinfo[i][j].pos.x = OFFSET_X + (dstH * (j * 1));
+                mapinfo[i][j].pos.y = OFFSET_Y + (dstW * (i * 1));
             }
         }
     };

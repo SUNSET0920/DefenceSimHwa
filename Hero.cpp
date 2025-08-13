@@ -2,10 +2,10 @@
 #include "Monster.h"
 #include "MapRender.h"
 
-static constexpr float TILE_SIZE = 50.f;
+
 static constexpr float RANK_MULTIPLIER[] = { 1.0f, 1.5f, 2.0f };
 
-Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r), gridPos(p) {
+Hero::Hero(Rank r, Vec2 p):rank(r), gridPos(p) {
 
     bool ishero = false;
     for (int i = 1; i < Height-1; ++i) {
@@ -22,31 +22,6 @@ Hero::Hero(HeroType t, Rank r, Vec2 p):type(t),rank(r), gridPos(p) {
         if (ishero)
             break;
     }
-
-	switch (type) {
-	case HeroType::Warrior:
-		attackSpeed = 0.5f; // 0.5초에 한 번
-		attackDamage = 30.0f; // 
-		detectRange = TILE_SIZE * 1.0f; // 인접 1타일
-		break;
-	case HeroType::Archer:
-		attackSpeed = 1.0f; // 1초에 한 번
-		attackDamage = 20.0f; // 
-		detectRange = TILE_SIZE * 2.5f; // 인접 2.5타일
-		break;
-	case HeroType::Mage:
-		attackSpeed = 1.5f; // 1.5초에 한 번
-		attackDamage = 25.0f; // 
-		detectRange = TILE_SIZE * 2.0f; // 인접 2타일
-		break;
-	}
-
-	// 계급 보정
-	float coef = RANK_MULTIPLIER[static_cast<int>(rank)];
-	attackDamage *= coef;
-	attackSpeed /= coef;
-
-	attackCooldown = 0.0f;
 }
 
 void Hero::update(float dt) {
@@ -54,6 +29,11 @@ void Hero::update(float dt) {
     if (attackCooldown > 0.0f)
         attackCooldown -= dt;
 
+    frameTime += dt;
+    if (frameTime >= frameDuration) {
+        frameTime = 0;
+        curFrame++;
+    }
     // 사거리 내 몬스터 탐색 및 공격
     // (GameManager에서 monsters 벡터를 넘겨 받거나, 참조 획득)
     //findAndAttack(/*monsters from GM*/);

@@ -137,6 +137,7 @@
     <ClInclude Include="Entity.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="Hero.h" />
+    <ClInclude Include="Hero_detail.h" />
     <ClInclude Include="mainheader.h" />
     <ClInclude Include="mapInfo.h" />
     <ClInclude Include="MapRender.h" />

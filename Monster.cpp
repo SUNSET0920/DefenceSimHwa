@@ -42,18 +42,13 @@ void Monster::update(float deltaTime) {
     }
     else {
 
-        //float moveval = speed * deltaTime;
+        float moveval = speed * deltaTime;
 
-        //int movex = dx / dist * moveval;
-        //int movey = dy / dist * moveval;
-        //if (dx < 0)
-        //    movex = -movex;
-
-        //if (dy < 0)
-        //    movey = -movey;
-
-        pos.x += dx / dist * speed * deltaTime;
-        pos.y += dy / dist * speed * deltaTime;
+        int vx = dx / dist * moveval;
+        int vy = dy / dist * moveval;
+        
+        pos.x += vx;
+        pos.y += vy;
     }
 }
 

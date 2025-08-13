@@ -7,10 +7,16 @@
 #include "Hero.h"
 #include "Monster.h"
 #include "MapRender.h"
+#include "Hero_detail.h"
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 static const UINT ID_TIMER_SPAWN = 1;
 static const UINT ID_TIMER_UPDATE = 2;
 static const UINT ID_BTN_SUMMON = 1001;
+
+
 
 class GameManager {
 public:
@@ -21,10 +27,11 @@ public:
     {
         // 경로 생성: 맵 테두리 따라 시계방향
         path = make_shared<Path>();
-        for (int j = 0; j < mapW; ++j)     path->waypoints.push_back({ j, 0 });
-        for (int i = 1; i < mapH; ++i)     path->waypoints.push_back({ mapW - 1, i });
-        for (int j = mapW - 2; j >= 0; --j)   path->waypoints.push_back({ j, mapH - 1 });
-        for (int i = mapH - 2; i > 0; --i)    path->waypoints.push_back({ 0, i });
+        for (int j = 0; j < mapW; ++j)          path->waypoints.push_back({ j, 0 });
+        for (int i = 1; i < mapH; ++i)          path->waypoints.push_back({ mapW - 1, i });
+        for (int j = mapW - 2; j >= 0; --j)     path->waypoints.push_back({ j, mapH - 1 });
+        for (int i = mapH - 2; i > 0; --i)      path->waypoints.push_back({ 0, i });
+        srand((unsigned int)time(NULL));
     }
 
     void init(HWND hWnd, HINSTANCE hInst) {
@@ -41,15 +48,27 @@ public:
     }
 
     void cmd(HWND, int id) {
+        int heronum = 0;
         if (id == ID_BTN_SUMMON) {
             // 첫번째 build 타일 위치 찾아서 소환
             
             for (int i = 0; i < mapHeight; ++i) {
                 for (int j = 0; j < mapWidth; ++j) {
                     if (g_map.mapinfo[i][j].type == TileType::Build && g_map.mapinfo[i][j].inHero == false) {
-                        heroes.push_back(
-                            make_shared<Hero>(HeroType::Warrior, Rank::Bronze, Vec2{ j,i })
-                        );
+                        heronum = rand() % 3;
+                        switch (heronum)
+                        {
+                        case 0:
+                            heroes.push_back(make_shared<Warrior>(Rank::Bronze, Vec2{ j,i }));
+                            break;
+                        case 1:
+                            heroes.push_back(make_shared<Archer>(Rank::Bronze, Vec2{ j,i }));
+                            break;
+                        case 2:
+                            heroes.push_back(make_shared<Mage>(Rank::Bronze, Vec2{ j,i }));
+                        default:
+                            break;
+                        }
                         return;
                     }
                 }
@@ -92,6 +111,9 @@ public:
 
         // 해당 타일이 설치 가능(Build)하면 gridPos 업데이트
         if (g_map.mapinfo[tileY][tileX].type == TileType::Build) {
+            if (g_map.mapinfo[tileY][tileX].inHero == true) {
+                return;
+            }
             heroes[dragIndex]->gridPos = { tileX, tileY };
             auto p = heroes[dragIndex]->pixelPos();
             dragMouseX = int(p.X);
@@ -100,7 +122,7 @@ public:
     }
     void mouseUp(int mx, int my) {
         if (!dragging || dragIndex < 0) return;
-
+        
         int tileX = (mx - OFFSET_X) / dstW;
         int tileY = (my - OFFSET_Y) / dstH;
 
@@ -132,6 +154,10 @@ public:
             for (auto& h : heroes)    h->update(dt);
             InvalidateRect(hWnd, nullptr, FALSE);
         }
+    }
+
+    void attack() {
+        
     }
 
     void render(Graphics& g) {

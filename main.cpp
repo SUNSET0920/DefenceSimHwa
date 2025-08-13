@@ -4,6 +4,10 @@
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdParam, int nCmdShow)
 {
+    ULONG_PTR gdiplusToken;
+    GdiplusStartupInput gdiplusStartupInput;
+    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
     // 렌더러 초기화 → 윈도우 생성, GDI+ 초기화까지 여기서
     if (!InitRenderer(hInstance,nCmdShow)) {
         MessageBox(nullptr, TEXT("Renderer 초기화 실패"), TEXT("Error"), MB_OK | MB_ICONERROR);
